@@ -1,0 +1,106 @@
+---
+title: "biomas"
+author: "Lucas Boyd"
+date: "5/26/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(readxl)
+options(scipen = 999)
+```
+
+```{r}
+abandon <- read_xlsx(here("abandonment_preliminary_counts.xlsx")) 
+
+abandon_near <- abandon %>% 
+  filter(year < 2100) %>% 
+  filter(ssp %in% c(3, "none"))
+
+abandon_chen <- abandon %>% 
+  filter(data == "chen") %>% 
+  filter(ssp == 3)
+
+abandon_compare <- abandon %>% 
+  filter(elapsed %in% c(5, 15, 25, 35)) %>% 
+  filter(ssp %in% c(3, "none")) %>% 
+  filter(data %in% c("chen", "mapbiomas")) %>% 
+  mutate(data = case_when(
+    data == "chen" ~ "Chen projections (SSP3)",
+  data == "mapbiomas" ~ "Historical Mapbiomas Brazil data"
+  ))
+
+abandon_chen_ssp <- abandon %>% 
+  filter(data == "chen") %>%
+  filter(year %in% c(2050, 2030)) %>% 
+  mutate(ssp = case_when(
+    ssp == 3 ~ "SSP3",
+    ssp == 2 ~ "SSP2",
+    ssp == 5 ~ "SSP5"
+  ))
+```
+
+```{r, include = FALSE}
+# chen abandonment under ssp3
+ggplot(data = abandon_chen, aes(x = year, y = abandonment)) +
+  geom_line(color = "darkred", size = 0.8, shape = 4, alpha = 0.7) +
+  geom_point(color = "black", size = 3) +
+  labs(x = element_blank(), y = "Total new abandonment (km^2)") +
+  theme_minimal(14)
+```
+
+
+```{r}
+# comparing mapbiomas and chen at ssp3
+compare <- ggplot(data = abandon_compare) +
+  geom_col(aes(x = elapsed, y = abandonment/1000, fill = data), position = "dodge") + 
+  scale_y_continuous(limits = c(0, 250)) +
+  theme_minimal(12) +
+  scale_fill_manual(values = c("darkred", "darkgreen")) +
+  labs(x = "Years elapsed", y = "Abandonment (thousands km^2)") +
+  geom_text(x = 2.7, y = 53, label = "2020", color = "white", size = 5) +
+  geom_text(x = 12.7, y = 134, label = "2030", color = "white", size = 5) +
+  geom_text(x = 22.7, y = 193, label = "2040", color = "white", size = 5) +
+  geom_text(x = 32.7, y = 225, label = "2050", color = "white", size = 5) +
+  theme(legend.position = "top",
+        legend.title = element_blank(), 
+        legend.text = element_text(size = 14))
+
+compare
+
+ggsave(plot = compare, filename = "biomas_compare.jpeg", device = "jpeg", )
+```
+
+
+```{r}
+# comparing ssp 2, 3, 5 at 2030 and 2050
+ssp <- ggplot(data = abandon_chen_ssp) +
+  geom_col(aes(x = ssp, y = abandonment/1000, fill = ssp), position = "dodge", width = 1) + 
+  facet_wrap(~ year) +
+  # geom_line(aes(x = year, y = abandonment, color = ssp)) +
+  scale_y_continuous(limits = c(0, 250)) +
+  theme_minimal(16) +
+  scale_fill_manual(values = c("darkgreen", "goldenrod3", "darkred")) +
+  labs(x = element_blank(), y = "Abandonment (thousands km^2)") +
+  geom_text(aes(x = ssp, y = 15, label = ssp), color = "white", size = 7) +
+  theme(legend.position = "none",
+        axis.text.x = element_blank(),
+          strip.text.x = element_text(size = 25))
+
+ggsave(plot = ssp, filename = "ssp.jpeg", device = "jpeg")
+
+ssp
+
+  
+
+
+  
+```
+
+```{r}
+
+```
+
