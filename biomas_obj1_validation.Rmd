@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(readxl)
+library(broom)
 options(scipen = 999)
 ```
 
@@ -56,41 +57,86 @@ ggplot(data = abandon_chen, aes(x = year, y = abandonment)) +
 ```{r}
 # comparing mapbiomas and chen at ssp3
 compare <- ggplot(data = abandon_compare) +
-  geom_col(aes(x = elapsed, y = abandonment/1000, fill = data), position = "dodge") + 
-  scale_y_continuous(limits = c(0, 250)) +
+  geom_col(aes(x = elapsed, y = abandonment/10000, fill = data), position = "dodge") + 
+  scale_y_continuous(limits = c(0, 25)) +
   theme_minimal(12) +
-  scale_fill_manual(values = c("darkred", "darkgreen")) +
-  labs(x = "Years elapsed", y = "Abandonment (thousands km^2)") +
-  geom_text(x = 2.7, y = 53, label = "2020", color = "white", size = 5) +
-  geom_text(x = 12.7, y = 134, label = "2030", color = "white", size = 5) +
-  geom_text(x = 22.7, y = 193, label = "2040", color = "white", size = 5) +
-  geom_text(x = 32.7, y = 225, label = "2050", color = "white", size = 5) +
+  scale_fill_manual(values = c("darkgreen", "goldenrod3")) +
+  labs(x = "Years of abandonment", y = "Abandonment (millions hectares)") +
+  geom_text(x = 2.7, y = 5.3, label = "2015-2020", color = "white", size = 3.3) +
+  geom_text(x = 12.7, y = 13.4, label = "2015-2030", color = "white", size = 3.3) +
+  geom_text(x = 22.7, y = 19.3, label = "2015-2040", color = "white", size = 3.3) +
+  geom_text(x = 32.7, y = 22.5, label = "2015-2050", color = "white", size = 3.3) +
+  geom_text(x = 7.2, y = 4.7, label = "2015-2020", color = "black", size = 3.3) +
+  geom_text(x = 17.2, y = 7.2, label = "2005-2020", color = "black", size = 3.3) +
+  geom_text(x = 27.2, y = 8.4, label = "1995-2020", color = "black", size = 3.3) +
+  geom_text(x = 37.2, y = 15.8, label = "1985-2020", color = "black", size = 3.3) +
   theme(legend.position = "top",
         legend.title = element_blank(), 
-        legend.text = element_text(size = 14))
+        legend.text = element_text(size = 14),
+        axis.text.x = element_text(size = 13, vjust = 5),
+        axis.title.x = element_text(vjust = 3)) +
+  scale_x_continuous(breaks = c(5, 15, 25, 35))
 
 compare
 
-ggsave(plot = compare, filename = "biomas_compare.jpeg", device = "jpeg", )
+ggsave(plot = compare, filename = "biomas_compare.jpeg", device = "jpeg")
+```
+
+```{r}
+ggplot(data = abandon_compare) +
+  geom_line(aes(x = elapsed, y = abandonment/10000, fill = data), position = "dodge") + 
+  scale_y_continuous(limits = c(0, 25)) +
+  theme_minimal(12) +
+  scale_fill_manual(values = c("darkred", "darkgreen")) +
+  labs(x = "Years elapsed", y = "Abandonment (million hectares)") +
+  theme(legend.position = "top",
+        legend.title = element_blank(), 
+        legend.text = element_text(size = 14)) +
+  scale_x_continuous(limits = c(0, 35))
+```
+
+
+```{r}
+abandon_chen_lm <- abandon_compare %>% 
+  filter(ssp == "3")
+
+abandon_mb_lm <- abandon_compare %>% 
+  filter(ssp == "none")
+
+lm_chen <- lm(abandonment ~ 0 + elapsed, data = abandon_chen_lm)
+lm_mb <- lm(abandonment ~ 0 + elapsed, data = abandon_mb_lm)
+
+chen_augment <- augment(lm_chen) %>% 
+  mutate(data = "mapbiomas")
+mb_augment <- augment(lm_mb) %>% 
+  mutate(data = "chen")
+
+df <- rbind(chen_augment, mb_augment) %>% 
+  mutate(per_year = .fitted/elapsed) 
+
+lm_chen$coefficients
+lm_mb$coefficients
+
+# finding abandonment per year
 ```
 
 
 ```{r}
 # comparing ssp 2, 3, 5 at 2030 and 2050
 ssp <- ggplot(data = abandon_chen_ssp) +
-  geom_col(aes(x = ssp, y = abandonment/1000, fill = ssp), position = "dodge", width = 1) + 
+  geom_col(aes(x = ssp, y = abandonment/10000, fill = ssp), position = "dodge", width = 1) + 
   facet_wrap(~ year) +
   # geom_line(aes(x = year, y = abandonment, color = ssp)) +
-  scale_y_continuous(limits = c(0, 250)) +
+  scale_y_continuous(limits = c(0, 25)) +
   theme_minimal(16) +
   scale_fill_manual(values = c("darkgreen", "goldenrod3", "darkred")) +
-  labs(x = element_blank(), y = "Abandonment (thousands km^2)") +
-  geom_text(aes(x = ssp, y = 15, label = ssp), color = "white", size = 7) +
+  labs(x = element_blank(), y = "Abandonment (millions hectares)") +
+  geom_text(aes(x = ssp, y = 1.5, label = ssp), color = "white", size = 7) +
   theme(legend.position = "none",
         axis.text.x = element_blank(),
           strip.text.x = element_text(size = 25))
 
-ggsave(plot = ssp, filename = "ssp.jpeg", device = "jpeg")
+ggsave(plot = ssp, filename = "ssp.jpeg", device = "jpeg", width = 7.29, height = 4.51)
 
 ssp
 
@@ -100,7 +146,7 @@ ssp
   
 ```
 
-```{r}
 
-```
+
+
 
